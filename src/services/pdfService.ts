@@ -6,11 +6,19 @@
 import type { Presupuesto, CalculoResultado } from '@/models/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale/es';
+import { guardarPDFCompleto } from './supabase';
+
+export interface PDFResultado {
+  blob: Blob;
+  urlLocal: string;
+  urlSupabase: string | null;
+  presupuestoId: string | null;
+}
 
 export async function generarPDF(
   presupuesto: Presupuesto,
   calculos: CalculoResultado
-): Promise<string> {
+): Promise<PDFResultado> {
   // Intentar usar el endpoint backend primero (con template HTML profesional)
   // Si falla, usar fallback con jsPDF mejorado
   
@@ -32,18 +40,45 @@ export async function generarPDF(
 
       if (response.ok) {
         const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
+        const urlLocal = URL.createObjectURL(blob);
+        const nombreArchivo = `PRESUPUESTO_${presupuesto.cliente.nombre.replace(/\s/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
         
-        // Descargar el PDF
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `PRESUPUESTO_${presupuesto.cliente.nombre.replace(/\s/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        // Guardar en Supabase (Storage + DB) - NO descargar automáticamente
+        let urlSupabase: string | null = null;
+        let presupuestoId: string | null = null;
+        try {
+          console.log('📤 Intentando guardar PDF en Supabase...');
+          console.log('   Nombre archivo:', nombreArchivo);
+          console.log('   Tamaño blob:', blob.size, 'bytes');
+          const resultado = await guardarPDFCompleto(blob, nombreArchivo, presupuesto, calculos);
+          urlSupabase = resultado.pdfUrl;
+          presupuestoId = resultado.presupuestoId;
+          if (urlSupabase) {
+            console.log('✅ PDF guardado exitosamente en Supabase');
+            console.log('   URL del PDF:', urlSupabase);
+            console.log('   ID del presupuesto:', presupuestoId);
+            console.log('   📍 Para ver el PDF:');
+            console.log('      - Ve a Supabase Dashboard > Storage > presupuestos');
+            console.log('      - O abre esta URL en el navegador:', urlSupabase);
+          } else {
+            console.warn('⚠️  PDF generado pero NO se pudo guardar en Supabase');
+            console.warn('   Verifica la configuración de Supabase en .env');
+          }
+        } catch (error: any) {
+          console.error('❌ Error al guardar PDF en Supabase:', error);
+          console.error('   Mensaje:', error.message);
+          console.error('   Verifica:');
+          console.error('   1. Variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env');
+          console.error('   2. Que el bucket "presupuestos" exista en Supabase');
+          console.error('   3. Que las políticas de Storage permitan escritura');
+        }
 
-        return url;
+        return {
+          blob,
+          urlLocal,
+          urlSupabase,
+          presupuestoId,
+        };
       }
     }
     
@@ -59,7 +94,7 @@ export async function generarPDF(
 async function generarPDFBasico(
   presupuesto: Presupuesto,
   calculos: CalculoResultado
-): Promise<string> {
+): Promise<PDFResultado> {
   const { jsPDF } = await import('jspdf');
   const doc = new (jsPDF as any)();
   
@@ -939,18 +974,48 @@ async function generarPDFBasico(
   y += 5;
   doc.text(`Documento generado el ${fechaCorta} | Presupuesto N° ${numeroPresupuesto}`, pageWidth / 2, y, { align: 'center' });
 
-  // Generar URL del PDF y descargarlo
+  // Generar blob del PDF
   const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
+  const urlLocal = URL.createObjectURL(blob);
   
-  // Descargar el PDF
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `PRESUPUESTO_${presupuesto.cliente.nombre.replace(/\s/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Nombre del archivo
+  const nombreArchivo = `PRESUPUESTO_${presupuesto.cliente.nombre.replace(/\s/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+  
+  // Guardar en Supabase (Storage + DB) - NO descargar automáticamente
+  let urlSupabase: string | null = null;
+  let presupuestoId: string | null = null;
+  try {
+    console.log('📤 Intentando guardar PDF en Supabase...');
+    console.log('   Nombre archivo:', nombreArchivo);
+    console.log('   Tamaño blob:', blob.size, 'bytes');
+    const resultado = await guardarPDFCompleto(blob, nombreArchivo, presupuesto, calculos);
+    urlSupabase = resultado.pdfUrl;
+    presupuestoId = resultado.presupuestoId;
+    if (urlSupabase) {
+      console.log('✅ PDF guardado exitosamente en Supabase');
+      console.log('   URL del PDF:', urlSupabase);
+      console.log('   ID del presupuesto:', presupuestoId);
+      console.log('   📍 Para ver el PDF:');
+      console.log('      - Ve a Supabase Dashboard > Storage > presupuestos');
+      console.log('      - O abre esta URL en el navegador:', urlSupabase);
+    } else {
+      console.warn('⚠️  PDF generado pero NO se pudo guardar en Supabase');
+      console.warn('   Verifica la configuración de Supabase en .env');
+    }
+  } catch (error: any) {
+    console.error('❌ Error al guardar PDF en Supabase:', error);
+    console.error('   Mensaje:', error.message);
+    console.error('   Verifica:');
+    console.error('   1. Variables VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env');
+    console.error('   2. Que el bucket "presupuestos" exista en Supabase');
+    console.error('   3. Que las políticas de Storage permitan escritura');
+    // Continuar aunque falle el guardado en Supabase
+  }
 
-  return url;
+  return {
+    blob,
+    urlLocal,
+    urlSupabase,
+    presupuestoId,
+  };
 }

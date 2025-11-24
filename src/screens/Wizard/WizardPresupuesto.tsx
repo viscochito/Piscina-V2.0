@@ -9,7 +9,6 @@ import { Paso4ManoObra } from './Paso4ManoObra';
 import { Paso5Resumen } from './Paso5Resumen';
 import { generarPDF } from '@/services/pdfService';
 import { compartirWhatsApp } from '@/services/shareService';
-import { guardarPresupuesto } from '@/services/api';
 
 const PASOS = [
   'Cliente',
@@ -67,28 +66,17 @@ export const WizardPresupuesto: React.FC = () => {
 
   const handleGenerarPDF = async () => {
     try {
-      const pdfUrl = await generarPDF(presupuesto, calculos);
-      // Actualizar presupuesto con PDF URL
-      // En una implementación real, esto se haría a través del hook
-      console.log('PDF generado:', pdfUrl);
+      const resultado = await generarPDF(presupuesto, calculos);
+      // Retornar el resultado para que Paso5Resumen pueda mostrar el PDF
+      return resultado;
     } catch (error) {
       console.error('Error al generar PDF:', error);
-      alert('Error al generar el PDF. Por favor, intenta nuevamente.');
+      throw error;
     }
   };
 
   const handleCompartirWhatsApp = () => {
     compartirWhatsApp(presupuesto, calculos);
-  };
-
-  const handleGuardar = async () => {
-    try {
-      await guardarPresupuesto(presupuesto, calculos);
-      alert('Presupuesto guardado correctamente');
-    } catch (error) {
-      console.error('Error al guardar:', error);
-      alert('Error al guardar el presupuesto. Por favor, intenta nuevamente.');
-    }
   };
 
 
@@ -134,7 +122,6 @@ export const WizardPresupuesto: React.FC = () => {
             calculos={calculos}
             onGenerarPDF={handleGenerarPDF}
             onCompartirWhatsApp={handleCompartirWhatsApp}
-            onGuardar={handleGuardar}
           />
         );
       default:

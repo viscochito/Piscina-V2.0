@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { PriceRow } from '@/components/ui/PriceRow';
 import { Button } from '@/components/ui/Button';
+import { PDFModal } from '@/components/ui/PDFModal';
 import type { Presupuesto, CalculoResultado, MaterialItem } from '@/models/types';
+import type { PDFResultado } from '@/services/pdfService';
 
 interface Paso6ResumenProps {
   presupuesto: Presupuesto;
   calculos: CalculoResultado;
-  onGenerarPDF: () => Promise<void>;
+  onGenerarPDF: () => Promise<PDFResultado>;
   onCompartirWhatsApp: () => void;
-  onGuardar: () => Promise<void>;
 }
 
 export const Paso6Resumen: React.FC<Paso6ResumenProps> = ({
@@ -16,19 +17,17 @@ export const Paso6Resumen: React.FC<Paso6ResumenProps> = ({
   calculos,
   onGenerarPDF,
   onCompartirWhatsApp,
-  onGuardar,
 }) => {
   const [generando, setGenerando] = useState(false);
-  const [guardando, setGuardando] = useState(false);
+  const [pdfResultado, setPdfResultado] = useState<PDFResultado | null>(null);
+  const [mostrarModal, setMostrarModal] = useState(false);
 
   const handleGenerarPDF = async () => {
     setGenerando(true);
     try {
-      await onGenerarPDF();
-      // Mostrar mensaje de éxito (el PDF se descarga automáticamente)
-      setTimeout(() => {
-        alert('✅ PDF generado exitosamente. Se descargará automáticamente.');
-      }, 500);
+      const resultado = await onGenerarPDF();
+      setPdfResultado(resultado);
+      setMostrarModal(true);
     } catch (error) {
       console.error('Error al generar PDF:', error);
       alert('❌ Error al generar el PDF. Por favor, intenta nuevamente.');
@@ -37,19 +36,17 @@ export const Paso6Resumen: React.FC<Paso6ResumenProps> = ({
     }
   };
 
-  const handleGuardar = async () => {
-    setGuardando(true);
-    try {
-      await onGuardar();
-    } finally {
-      setGuardando(false);
-    }
-  };
-
   const materialesActivos = presupuesto.materiales.filter((m) => m.activo);
 
+  // Usar URL de Supabase si está disponible, sino usar URL local
+  const pdfUrlParaMostrar = pdfResultado?.urlSupabase || pdfResultado?.urlLocal || '';
+  const nombreArchivo = pdfResultado
+    ? `PRESUPUESTO_${presupuesto.cliente.nombre.replace(/\s/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`
+    : 'presupuesto.pdf';
+
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {/* Información del cliente */}
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="font-semibold text-gray-800 mb-2">Cliente</h3>
@@ -127,16 +124,18 @@ export const Paso6Resumen: React.FC<Paso6ResumenProps> = ({
         >
           Compartir por WhatsApp
         </Button>
-        <Button
-          onClick={handleGuardar}
-          disabled={guardando}
-          fullWidth
-          variant="secondary"
-        >
-          {guardando ? 'Guardando...' : 'Guardar presupuesto'}
-        </Button>
       </div>
     </div>
+
+    {pdfResultado && (
+      <PDFModal
+        isOpen={mostrarModal}
+        onClose={() => setMostrarModal(false)}
+        pdfUrl={pdfUrlParaMostrar}
+        nombreArchivo={nombreArchivo}
+      />
+    )}
+    </>
   );
 };
 
