@@ -12,8 +12,8 @@ export const Stepper: React.FC<StepperProps> = ({
   steps,
 }) => {
   return (
-    <div className="w-full mb-6 md:mb-8">
-      <div className="flex items-center justify-between overflow-x-auto pb-2 -mx-2 px-2">
+    <div className="w-full mb-6 sm:mb-8">
+      <div className="flex items-center justify-between overflow-x-auto overflow-y-visible pb-2 pt-2 -mx-2 px-2">
         {steps.map((step, index) => {
           const stepNumber = index + 1;
           const isActive = stepNumber === currentStep;
@@ -21,25 +21,26 @@ export const Stepper: React.FC<StepperProps> = ({
           
           return (
             <React.Fragment key={stepNumber}>
-              <div className="flex flex-col items-center flex-1 min-w-0">
+              <div className="flex flex-col items-center flex-1 min-w-0 pt-1">
                 <div
                   className={`
-                    w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center
-                    font-semibold text-sm md:text-base transition-colors flex-shrink-0
+                    min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center
+                    font-semibold text-sm transition-colors flex-shrink-0
+                    touch-manipulation relative z-10
                     ${isActive ? 'bg-primary-600 text-white shadow-lg scale-110' : ''}
                     ${isCompleted ? 'bg-primary-200 text-primary-700' : ''}
                     ${!isActive && !isCompleted ? 'bg-gray-200 text-gray-500' : ''}
                   `}
                 >
                   {isCompleted ? (
-                    <span className="text-lg md:text-xl">✓</span>
+                    <span className="text-lg sm:text-xl">✓</span>
                   ) : (
                     stepNumber
                   )}
                 </div>
                 <p
                   className={`
-                    mt-2 text-[10px] md:text-xs text-center max-w-[60px] md:max-w-[80px] truncate
+                    mt-2 text-xs text-center flex-1 truncate
                     hidden sm:block
                     ${isActive ? 'text-primary-600 font-medium' : 'text-gray-500'}
                   `}
@@ -49,7 +50,7 @@ export const Stepper: React.FC<StepperProps> = ({
                 {/* Versión móvil: solo mostrar número del paso actual */}
                 <p
                   className={`
-                    mt-1 text-[9px] text-center truncate
+                    mt-1 text-[10px] text-center truncate
                     sm:hidden
                     ${isActive ? 'text-primary-600 font-medium' : 'text-transparent'}
                   `}
@@ -60,7 +61,7 @@ export const Stepper: React.FC<StepperProps> = ({
               {index < steps.length - 1 && (
                 <div
                   className={`
-                    flex-1 h-1 mx-1 md:mx-2 min-w-[20px] flex-shrink
+                    flex-1 py-0.5 px-1 flex-shrink
                     ${isCompleted ? 'bg-primary-600' : 'bg-gray-200'}
                   `}
                 />

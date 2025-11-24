@@ -48,19 +48,8 @@ export const Paso3Dimensiones: React.FC<Paso3DimensionesProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-lg">
-        <p className="text-xs md:text-sm text-gray-700 mb-2">
-          <strong>Ejemplos de dimensiones:</strong>
-        </p>
-        <ul className="text-xs md:text-sm text-gray-600 space-y-1">
-          <li>• Pileta pequeña: 4m x 2m x 1.2m</li>
-          <li>• Pileta mediana: 8m x 4m x 1.5m</li>
-          <li>• Pileta grande: 12m x 6m x 1.8m</li>
-        </ul>
-      </div>
-
       <NumberSelector
-        label="Largo (metros)"
+        label="Largo (m)"
         value={largo}
         onChange={setLargo}
         min={0}
@@ -70,7 +59,7 @@ export const Paso3Dimensiones: React.FC<Paso3DimensionesProps> = ({
       />
       
       <NumberSelector
-        label="Ancho (metros)"
+        label="Ancho (m)"
         value={ancho}
         onChange={setAncho}
         min={0}
@@ -80,14 +69,13 @@ export const Paso3Dimensiones: React.FC<Paso3DimensionesProps> = ({
       />
       
       <NumberSelector
-        label="Profundidad promedio (metros)"
+        label="Profundidad promedio (m)"
         value={profundidadPromedio}
         onChange={setProfundidadPromedio}
         min={0}
         step={0.1}
         allowDecimals={true}
         error={errors.profundidadPromedio}
-        helperText="Profundidad promedio de la pileta"
       />
       
       <Button type="submit" fullWidth>

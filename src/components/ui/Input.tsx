@@ -25,21 +25,20 @@ export const Input: React.FC<InputProps> = ({
     return 'text';
   };
 
-  // Asegurar tamaño mínimo para área de toque en móvil (48px recomendado)
   return (
     <div className="w-full">
-      <label className="block text-sm md:text-base font-medium text-gray-700 mb-1.5 md:mb-2">
+      <label className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
       <input
         type={type}
         inputMode={getInputMode()}
         className={`
-          w-full px-4 py-3.5 md:py-3 border rounded-lg text-base md:text-sm
-          min-h-[48px] md:min-h-0
-          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+          w-full px-4 py-3 border rounded-lg text-base
+          touch-manipulation
+          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
           transition-all
-          ${error ? 'border-red-500 bg-red-50' : 'border-gray-300 bg-white'}
+          ${error ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400 bg-white'}
           ${className}
         `}
         {...props}

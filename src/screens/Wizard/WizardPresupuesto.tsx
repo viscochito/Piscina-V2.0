@@ -143,31 +143,32 @@ export const WizardPresupuesto: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pb-8">
-      <div className="max-w-2xl mx-auto px-3 md:px-4 py-4 md:py-8">
-        <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-4 md:mb-6">
-          <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-1 md:mb-2">
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 w-full px-4 py-4">
+        <div className="w-full bg-white rounded-lg shadow-sm border border-gray-100 p-4 mb-4">
+          <h1 className="text-xl font-bold text-gray-800 mb-2">
             Generar Presupuesto
           </h1>
-          <p className="text-gray-600 text-xs md:text-sm">
+          <p className="text-gray-600 text-sm">
             Completa los pasos para generar un presupuesto profesional
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <div className="w-full bg-white rounded-lg shadow-sm border border-gray-100 p-4 flex flex-col flex-1 min-h-0">
           <Stepper
             currentStep={pasoActual}
             totalSteps={PASOS.length}
             steps={PASOS}
           />
 
-          <div className="mt-6 md:mt-8">
+          <div className="mt-6 flex-1 min-h-0">
             {renderPaso()}
           </div>
 
-          {pasoActual > 1 && pasoActual < PASOS.length && (
-            <div className="mt-4 md:mt-6">
-              <Button onClick={handleBack} variant="outline" fullWidth size="md">
+          {/* Botón Volver solo si no es el paso 4 (que tiene su propio footer) */}
+          {pasoActual > 1 && pasoActual < PASOS.length && pasoActual !== 4 && (
+            <div className="mt-6">
+              <Button onClick={handleBack} variant="outline" size="md">
                 Volver
               </Button>
             </div>

@@ -9,7 +9,7 @@
 
   color-scheme: light;
   color: #213547;
-  background-color: #ffffff;
+  background-color: #fafbfc;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -21,11 +21,20 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  width: 100%;
   /* Prevenir zoom en iOS al hacer focus en inputs */
   touch-action: manipulation;
   /* Mejorar renderizado en móvil */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Mejorar scroll en móvil */
+  overflow-x: hidden;
+  /* Fondo minimalista y profesional */
+  background: linear-gradient(135deg, #f5f7fa 0%, #fafbfc 50%, #f8f9fa 100%);
+  background-attachment: fixed;
+  /* Safe area para móviles */
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
 }
 
 * {

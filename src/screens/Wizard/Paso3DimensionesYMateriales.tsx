@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NumberSelector } from '@/components/ui/NumberSelector';
 import { MaterialCard } from '@/components/form/MaterialCard';
 import { Button } from '@/components/ui/Button';
@@ -15,27 +15,11 @@ interface Paso3DimensionesYMaterialesProps {
 // Materiales predefinidos
 const materialesBase: MaterialItem[] = [
   {
-    id: 'ceramico-economica',
-    nombre: 'Cerámico - Calidad Económica',
-    tipo: 'm2',
-    precioPorM2: 35,
-    calidad: 'economica',
-    activo: false,
-  },
-  {
-    id: 'ceramico-estandar',
-    nombre: 'Cerámico - Calidad Estándar',
+    id: 'ceramico',
+    nombre: 'Cerámicos',
     tipo: 'm2',
     precioPorM2: 50,
     calidad: 'estandar',
-    activo: false,
-  },
-  {
-    id: 'ceramico-premium',
-    nombre: 'Cerámico - Calidad Premium',
-    tipo: 'm2',
-    precioPorM2: 75,
-    calidad: 'premium',
     activo: false,
   },
   {
@@ -105,15 +89,59 @@ export const Paso3DimensionesYMateriales: React.FC<Paso3DimensionesYMaterialesPr
     profundidadPromedio?: string;
   }>({});
 
-  const materialesMostrar = materiales.length > 0 ? materiales : materialesBase;
+  // Función para limpiar y migrar materiales antiguos
+  const limpiarMaterialesAntiguos = (materiales: MaterialItem[]): MaterialItem[] => {
+    // Filtrar cerámicos antiguos (economica, estandar, premium, lujo individuales)
+    const ceramicosAntiguos = ['ceramico-economica', 'ceramico-estandar', 'ceramico-premium', 'ceramico-lujo'];
+    const materialesLimpios = materiales.filter(m => !ceramicosAntiguos.includes(m.id));
+    
+    // Verificar si ya existe el cerámico genérico
+    const tieneCeramicoGenerico = materialesLimpios.some(m => m.id === 'ceramico');
+    
+    // Si no existe el cerámico genérico pero había cerámicos antiguos activos, crear uno
+    if (!tieneCeramicoGenerico) {
+      const ceramicosAntiguosActivos = materiales.filter(m => ceramicosAntiguos.includes(m.id) && m.activo);
+      if (ceramicosAntiguosActivos.length > 0) {
+        // Usar la calidad del primer cerámico activo encontrado
+        const calidad = ceramicosAntiguosActivos[0]?.calidad || 'estandar';
+        let precioPorM2 = 50;
+        if (calidad === 'premium') precioPorM2 = 75;
+        if (calidad === 'lujo') precioPorM2 = 120;
+        
+        materialesLimpios.push({
+          id: 'ceramico',
+          nombre: 'Cerámicos',
+          tipo: 'm2',
+          precioPorM2,
+          calidad: calidad === 'economica' ? 'estandar' : calidad,
+          activo: true,
+        });
+      }
+    }
+    
+    return materialesLimpios;
+  };
+
+  // Limpiar materiales antiguos y combinar con base
+  let materialesMostrar: MaterialItem[];
+  if (materiales.length > 0) {
+    const materialesLimpios = limpiarMaterialesAntiguos(materiales);
+    // Combinar con materiales base, evitando duplicados
+    const idsExistentes = new Set(materialesLimpios.map(m => m.id));
+    const materialesBaseSinDuplicados = materialesBase.filter(m => !idsExistentes.has(m.id));
+    materialesMostrar = [...materialesLimpios, ...materialesBaseSinDuplicados];
+    
+    // Si se limpiaron materiales, actualizar el estado
+    if (materialesLimpios.length !== materiales.length) {
+      onUpdateMateriales(materialesMostrar);
+    }
+  } else {
+    materialesMostrar = materialesBase;
+  }
 
   // Separar cerámicos del resto de materiales
-  const ceramicos = materialesMostrar.filter(m => m.id.startsWith('ceramico-'));
-  const otrosMateriales = materialesMostrar.filter(m => !m.id.startsWith('ceramico-'));
-  
-  // Verificar si hay cerámicos activos
-  const ceramicosActivos = ceramicos.filter(m => m.activo);
-  const hayCeramicosActivos = ceramicosActivos.length > 0;
+  const ceramicos = materialesMostrar.filter(m => m.id === 'ceramico' || m.id.startsWith('ceramico-'));
+  const otrosMateriales = materialesMostrar.filter(m => m.id !== 'ceramico' && !m.id.startsWith('ceramico-'));
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -147,10 +175,15 @@ export const Paso3DimensionesYMateriales: React.FC<Paso3DimensionesYMaterialesPr
   };
 
   const handleCalidadChange = (calidad: 'estandar' | 'premium' | 'lujo') => {
-    // Aplicar la calidad seleccionada a todos los cerámicos activos
+    // Aplicar la calidad seleccionada al cerámico activo
     const nuevos = materialesMostrar.map((m) => {
-      if (m.id.startsWith('ceramico-') && m.activo) {
-        return { ...m, calidad };
+      if ((m.id === 'ceramico' || m.id.startsWith('ceramico-')) && m.activo) {
+        // Actualizar calidad y precio según la selección
+        let precioPorM2 = 50; // Estándar por defecto
+        if (calidad === 'premium') precioPorM2 = 75;
+        if (calidad === 'lujo') precioPorM2 = 120;
+        
+        return { ...m, calidad, precioPorM2 };
       }
       return m;
     });
@@ -172,19 +205,8 @@ export const Paso3DimensionesYMateriales: React.FC<Paso3DimensionesYMaterialesPr
           <h2 className="text-lg md:text-xl font-semibold text-gray-800">Dimensiones de la Pileta</h2>
         </div>
 
-        <div className="mb-4 md:mb-6 p-3 md:p-4 bg-gray-50 rounded-lg">
-          <p className="text-xs md:text-sm text-gray-700 mb-2">
-            <strong>Ejemplos de dimensiones:</strong>
-          </p>
-          <ul className="text-xs md:text-sm text-gray-600 space-y-1">
-            <li>• Pileta pequeña: 4m x 2m x 1.2m</li>
-            <li>• Pileta mediana: 8m x 4m x 1.5m</li>
-            <li>• Pileta grande: 12m x 6m x 1.8m</li>
-          </ul>
-        </div>
-
         <NumberSelector
-          label="Largo (metros)"
+          label="Largo (m)"
           value={largo}
           onChange={setLargo}
           min={0}
@@ -194,7 +216,7 @@ export const Paso3DimensionesYMateriales: React.FC<Paso3DimensionesYMaterialesPr
         />
         
         <NumberSelector
-          label="Ancho (metros)"
+          label="Ancho (m)"
           value={ancho}
           onChange={setAncho}
           min={0}
@@ -204,14 +226,13 @@ export const Paso3DimensionesYMateriales: React.FC<Paso3DimensionesYMaterialesPr
         />
         
         <NumberSelector
-          label="Profundidad promedio (metros)"
+          label="Profundidad promedio (m)"
           value={profundidadPromedio}
           onChange={setProfundidadPromedio}
           min={0}
           step={0.1}
           allowDecimals={true}
           error={errors.profundidadPromedio}
-          helperText="Profundidad promedio de la pileta"
         />
       </div>
 
@@ -228,64 +249,10 @@ export const Paso3DimensionesYMateriales: React.FC<Paso3DimensionesYMaterialesPr
           </p>
         </div>
 
-        <div className="space-y-4 max-h-[50vh] md:max-h-[60vh] overflow-y-auto -mx-2 px-2">
+        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
           {/* Grupo de Cerámicos */}
           {ceramicos.length > 0 && (
             <div className="space-y-3">
-              <div className="sticky top-0 bg-gray-50 py-2 px-3 rounded-lg border border-gray-200 z-10">
-                <h3 className="text-sm md:text-base font-semibold text-gray-700">Revestimientos Cerámicos</h3>
-              </div>
-              
-              {/* Selector de Calidad - Solo se muestra si hay cerámicos activos */}
-              {hayCeramicosActivos && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <h4 className="text-sm md:text-base font-semibold text-gray-800 mb-3">
-                    Calidad de los cerámicos
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleCalidadChange('estandar')}
-                      className={`
-                        px-4 py-2 rounded-lg font-medium text-sm transition-all
-                        ${ceramicosActivos[0]?.calidad === 'estandar' 
-                          ? 'bg-primary-600 text-white shadow-md' 
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-primary-400'
-                        }
-                      `}
-                    >
-                      Estándar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCalidadChange('premium')}
-                      className={`
-                        px-4 py-2 rounded-lg font-medium text-sm transition-all
-                        ${ceramicosActivos[0]?.calidad === 'premium' 
-                          ? 'bg-primary-600 text-white shadow-md' 
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-primary-400'
-                        }
-                      `}
-                    >
-                      Premium
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCalidadChange('lujo')}
-                      className={`
-                        px-4 py-2 rounded-lg font-medium text-sm transition-all
-                        ${ceramicosActivos[0]?.calidad === 'lujo' 
-                          ? 'bg-primary-600 text-white shadow-md' 
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-primary-400'
-                        }
-                      `}
-                    >
-                      Lujo
-                    </button>
-                  </div>
-                </div>
-              )}
-              
               {ceramicos.map((material) => (
                 <MaterialCard
                   key={material.id}
@@ -293,6 +260,7 @@ export const Paso3DimensionesYMateriales: React.FC<Paso3DimensionesYMaterialesPr
                   onToggle={handleToggle}
                   onUpdate={handleUpdate}
                   superficieACotizar={superficieACotizar}
+                  onCalidadChange={material.id === 'ceramico' ? handleCalidadChange : undefined}
                 />
               ))}
             </div>
@@ -301,11 +269,6 @@ export const Paso3DimensionesYMateriales: React.FC<Paso3DimensionesYMaterialesPr
           {/* Otros materiales */}
           {otrosMateriales.length > 0 && (
             <div className="space-y-3">
-              {ceramicos.length > 0 && (
-                <div className="sticky top-0 bg-gray-50 py-2 px-3 rounded-lg border border-gray-200 z-10">
-                  <h3 className="text-sm md:text-base font-semibold text-gray-700">Equipamiento y Accesorios</h3>
-                </div>
-              )}
               {otrosMateriales.map((material) => (
                 <MaterialCard
                   key={material.id}
